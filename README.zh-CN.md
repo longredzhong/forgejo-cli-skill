@@ -4,7 +4,7 @@
 
 遵循 [Agent Skills 开放规范](https://agentskills.io/specification) 的 skill，帮助编码 agent 正确、安全地使用 [`fj`（forgejo-cli）](https://codeberg.org/forgejo-contrib/forgejo-cli) 操作 Forgejo 和 Codeberg。这是独立的 skill 项目，不是上游 CLI，也不是凭据管理器。
 
-**分发状态：**源码已实现 ZIP 构建和 npm 安装入口，不代表已经发布 npm 包或 release。Git 安装需选择包含 skill 的 ref；默认分支示例适用于合并之后。
+**分发：**可从 Git 安装，或下载 [GitHub Releases](https://github.com/longredzhong/forgejo-cli-skill/releases) 中列出的版本。npm 发布是独立流程，目前尚未执行。skill 自带运行环境 `compatibility` 和字符串映射 `metadata`，记录自身版本、仓库、上游项目及已测试 CLI 版本；测试确保 skill 版本与 `package.json` 一致。
 
 ## 安装
 

@@ -48,7 +48,7 @@ These are initial results, not an automatically updated CI status or a compatibi
 
 ## Deliberate design choices
 
-- **One standard skill under `skills/forgejo-cli/`:** directory name matches frontmatter; only standard metadata fields are used. No agent-specific plugin manifests or unrestricted tool allowlists are needed.
+- **One standard skill under `skills/forgejo-cli/`:** directory name matches frontmatter; only standard frontmatter fields are used. `compatibility` describes runtime requirements, while the string-valued `metadata` map records the skill version, repository, upstream project, and tested fj version. Tests enforce that the skill version matches `package.json`; this metadata travels unchanged through ZIP/npm installation. No agent-specific plugin manifests or unrestricted tool allowlists are needed.
 - **No exhaustive CLI dump:** the entrypoint teaches safe procedures and routes to focused references. Installed help remains the per-command flag authority.
 - **No wrapper or credential reader:** run `fj` directly. A wrapper would add quoting/compatibility failure modes and unnecessary secret access.
 - **No universal API/JSON fallback:** the baseline does not offer those interfaces. Unsupported operations remain explicit limitations instead of prompting credential extraction.

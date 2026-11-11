@@ -4,7 +4,7 @@
 
 A standard [Agent Skill](https://agentskills.io/specification) that helps coding agents use [`fj` (forgejo-cli)](https://codeberg.org/forgejo-contrib/forgejo-cli) correctly and safely for Forgejo and Codeberg. This is an independent skill project, not the upstream CLI or a credential manager.
 
-**Distribution status:** ZIP building and the npm installer are implemented in source. No npm package or release is claimed to have been published. Git installation requires a ref containing this skill; default-branch examples apply after merge.
+**Distribution:** Install from Git or download a version listed in [GitHub Releases](https://github.com/longredzhong/forgejo-cli-skill/releases). npm publication is separate and has not been performed. The bundled skill includes runtime `compatibility` and string-valued `metadata` for its version, repository, upstream project, and tested CLI version; tests keep the skill version aligned with `package.json`.
 
 ## Install
 

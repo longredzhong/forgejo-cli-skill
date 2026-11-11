@@ -1,7 +1,7 @@
 """Offline repository checks; opt-in CLI tests invoke help, never operations.
 
 No third-party packages are required. The frontmatter reader intentionally
-supports this project's flat string-only subset, not arbitrary YAML.
+supports this project's string fields and metadata mapping, not arbitrary YAML.
 """
 
 import json
@@ -30,13 +30,34 @@ def read_frontmatter(path):
     except ValueError as exc:
         raise ValueError("Unterminated frontmatter") from exc
     fields = {}
+    in_metadata = False
     for line in lines[1:end]:
-        match = re.fullmatch(r"([a-z-]+): (.+)", line)
+        if line == "metadata:":
+            if "metadata" in fields:
+                raise ValueError("Duplicate frontmatter key: metadata")
+            fields["metadata"] = {}
+            in_metadata = True
+            continue
+        if line.startswith("  "):
+            if not in_metadata:
+                raise ValueError("Indented fields are only supported inside metadata")
+            target = fields["metadata"]
+            line = line[2:]
+        else:
+            in_metadata = False
+            target = fields
+        match = re.fullmatch(r"([a-z][a-z0-9-]*): (.+)", line)
         if not match:
-            raise ValueError("Use flat, one-line string frontmatter in this project")
+            raise ValueError("Use one-line string fields or a two-space metadata mapping")
         key, value = match.groups()
-        if key in fields:
+        if key == "metadata" and target is fields:
+            raise ValueError("metadata must be a string-to-string mapping")
+        if key in target:
             raise ValueError(f"Duplicate frontmatter key: {key}")
+        # Require quoted metadata so YAML booleans/numbers cannot be mistaken
+        # for strings by this deliberately limited project-specific reader.
+        if target is not fields and not value.startswith('"'):
+            raise ValueError(f"Quote the metadata string value for {key}")
         # JSON double-quoted strings are also valid YAML strings.
         if value.startswith('"'):
             value = json.loads(value)
@@ -44,7 +65,9 @@ def read_frontmatter(path):
             raise ValueError(f"Quote the string value for {key}")
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"Expected a nonempty string for {key}")
-        fields[key] = value
+        target[key] = value
+    if "metadata" in fields and not fields["metadata"]:
+        raise ValueError("metadata must contain string fields in this project")
     return fields, "\n".join(lines[end + 1 :])
 
 
@@ -71,7 +94,7 @@ def shell_commands(path):
 class SkillStructureTests(unittest.TestCase):
     def test_frontmatter_and_size(self):
         fields, body = read_frontmatter(SKILL / "SKILL.md")
-        self.assertEqual(set(fields), {"name", "description", "compatibility"})
+        self.assertEqual(set(fields), {"name", "description", "compatibility", "metadata"})
         name = fields["name"]
         self.assertRegex(name, r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
         self.assertLessEqual(len(name), 64)
@@ -80,6 +103,46 @@ class SkillStructureTests(unittest.TestCase):
         self.assertLessEqual(len(fields["compatibility"]), 500)
         self.assertTrue(body.strip())
         self.assertLess(len((SKILL / "SKILL.md").read_text().splitlines()), 500)
+
+    def test_metadata_matches_package_and_preserves_provenance(self):
+        fields, _ = read_frontmatter(SKILL / "SKILL.md")
+        metadata = fields["metadata"]
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(metadata), {"version", "repository", "upstream-project", "tested-cli-version"})
+        self.assertTrue(all(isinstance(key, str) and isinstance(value, str)
+                            for key, value in metadata.items()))
+        self.assertEqual(metadata["version"], package["version"])
+        repository = package["repository"]["url"].removeprefix("git+").removesuffix(".git")
+        self.assertEqual(metadata["repository"], repository)
+        self.assertEqual(metadata["upstream-project"], "https://codeberg.org/forgejo-contrib/forgejo-cli")
+        self.assertEqual(metadata["tested-cli-version"], "0.8.0-dev")
+        self.assertIn("No Node.js or Python", fields["compatibility"])
+
+    def test_metadata_parser_accepts_mapping_before_other_fields(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "SKILL.md"
+            path.write_text('---\nmetadata:\n  version: "0.1.0"\nname: test\n---\nbody\n', encoding="utf-8")
+            fields, body = read_frontmatter(path)
+            self.assertEqual(fields, {"metadata": {"version": "0.1.0"}, "name": "test"})
+            self.assertEqual(body.strip(), "body")
+
+    def test_metadata_parser_rejects_invalid_maps(self):
+        malformed = (
+            'metadata: "not a map"',
+            'metadata:',
+            'metadata:\n  version: "0.1.0"\n  version: "0.2.0"',
+            'metadata:\n  version: "0.1.0"\nmetadata:\n  author: test',
+            'metadata:\n  version: ["0.1.0"]',
+            'metadata:\n  version: 0.1.0',
+            'metadata:\n    version: "0.1.0"',
+            '  version: "0.1.0"',
+        )
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "SKILL.md"
+            for content in malformed:
+                path.write_text(f"---\n{content}\n---\nbody\n", encoding="utf-8")
+                with self.subTest(content=content), self.assertRaises(ValueError):
+                    read_frontmatter(path)
 
     def test_local_markdown_links_exist_and_stay_in_repository(self):
         # Inline links in this repository deliberately use simple relative paths.

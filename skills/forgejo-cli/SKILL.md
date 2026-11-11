@@ -1,7 +1,12 @@
 ---
 name: forgejo-cli
 description: "Use fj (forgejo-cli) to work with Forgejo and Codeberg repositories, issues, pull requests, reviews, CI status, Actions, releases, tags, wikis, organizations, and teams. Use when the user mentions fj, forgejo-cli, Forgejo, Codeberg, AGit, or asks to manage a repository on a Forgejo instance. Prefer fj over GitHub-specific gh commands for these hosts. Includes safe authentication, explicit targeting, noninteractive input, and verification workflows."
-compatibility: "Requires fj on PATH and network access to the target Forgejo instance; Git for local branch, remote, push, checkout, and AGit workflows. Examples checked with fj v0.8.0-dev; inspect installed command help for version differences."
+compatibility: "Requires fj on PATH and network access to the target Forgejo instance. Git is required for local branch, remote, push, checkout, and AGit workflows. No Node.js or Python is needed to use the installed skill. Inspect installed fj command help for version differences."
+metadata:
+  version: "0.1.0"
+  repository: "https://github.com/longredzhong/forgejo-cli-skill"
+  upstream-project: "https://codeberg.org/forgejo-contrib/forgejo-cli"
+  tested-cli-version: "0.8.0-dev"
 ---
 
 # Forgejo CLI (`fj`)
