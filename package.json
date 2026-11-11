@@ -1,0 +1,39 @@
+{
+  "name": "forgejo-cli-skill",
+  "version": "0.1.0",
+  "description": "Install a standard Agent Skill for fj, the Forgejo CLI",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longredzhong/forgejo-cli-skill.git"
+  },
+  "type": "module",
+  "bin": {
+    "forgejo-cli-skill": "bin/forgejo-cli-skill.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/forgejo-cli/SKILL.md",
+    "skills/forgejo-cli/references/*.md",
+    "README.zh-CN.md"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "agent-skills",
+    "forgejo",
+    "codeberg",
+    "fj"
+  ],
+  "scripts": {
+    "test": "node --test tests/installer.test.mjs",
+    "check": "python3 -I -m unittest discover -s tests -v",
+    "build:zip": "python3 -I scripts/build_release.py"
+  }
+}

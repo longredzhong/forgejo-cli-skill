@@ -11,3 +11,8 @@ result-*
 # Python validation/test caches
 __pycache__/
 *.py[cod]
+
+# Distribution artifacts and npm dependencies
+/dist/
+/node_modules/
+*.tgz

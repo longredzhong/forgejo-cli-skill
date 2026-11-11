@@ -1,80 +1,102 @@
 # forgejo-cli-skill
 
-让 agent 正确、安全地使用 [`fj`（forgejo-cli）](https://codeberg.org/forgejo-contrib/forgejo-cli)，而不是套用 GitHub CLI 的参数。
+**English** | [简体中文](README.zh-CN.md)
 
-这是一个遵循 [Agent Skills 开放规范](https://agentskills.io/specification) 的 skill 仓库，不是 `fj` 的实现、封装器或凭据管理器，也不是上游官方项目。
+A standard [Agent Skill](https://agentskills.io/specification) that helps coding agents use [`fj` (forgejo-cli)](https://codeberg.org/forgejo-contrib/forgejo-cli) correctly and safely for Forgejo and Codeberg. This is an independent skill project, not the upstream CLI or a credential manager.
 
-## 安装
+**Distribution status:** ZIP building and the npm installer are implemented in source. No npm package or release is claimed to have been published. Git installation requires a ref containing this skill; default-branch examples apply after merge.
 
-先安装上游 `forgejo-cli`，确保 `fj` 在 `PATH` 中。安装方法见[上游安装文档](https://codeberg.org/forgejo-contrib/forgejo-cli/wiki/Installation)。skill 本身不安装 CLI、不修改登录信息。
+## Install
 
-使用支持标准 skill 目录的 agent，将 **`skills/forgejo-cli/` 整个目录**复制到该 agent 的 skills 目录；最终目录名应保持为 `forgejo-cli`：
+Install upstream `forgejo-cli` separately and check `fj version`. See the [upstream installation guide](https://codeberg.org/forgejo-contrib/forgejo-cli/wiki/Installation). The skill installer does not install fj, authenticate, or run remote operations.
 
-```text
-<agent-skills-directory>/
-└── forgejo-cli/
-    ├── SKILL.md
-    └── references/
-        └── ...
-```
-
-例如，可按 agent 的文档选择项目级 `.agents/skills/forgejo-cli/` 或其他受支持的 skills 路径。不同 agent 的发现位置不同；不要把仓库根目录直接当作名为 `forgejo-cli` 的 skill，也不要只复制 `SKILL.md` 而丢掉参考文件。
-
-若使用支持 Git 仓库发现的 skill 安装器，将当前仓库地址交给安装器并选择 `forgejo-cli` 即可。本仓库不要求特定的安装器或插件市场。
-
-## 使用
-
-让 agent 处理明确的 Forgejo 任务，例如：
-
-- “查看这个 Codeberg 仓库中所有状态的 timeout 相关 issue。”
-- “阅读这个 Forgejo PR 的 diff、评论和检查状态，先不要发布任何内容。”
-- “按仓库模板创建 issue，正文从准备好的 Markdown 文件读取。”
-- “为这个分支创建 PR，使用指定的 base/head，不要合并。”
-
-skill 使用英文编写，以便跨 agent 复用；description 包含 Forgejo、Codeberg、fj、AGit 等触发词。主文件只保留工作流程与关键陷阱，参考文档按任务加载。
-
-## 覆盖范围
-
-| 文件 | 内容 |
-| --- | --- |
-| [SKILL.md](skills/forgejo-cli/SKILL.md) | 入口、目标选择、安全边界、非交互默认值 |
-| [auth-and-targeting.md](skills/forgejo-cli/references/auth-and-targeting.md) | 安装、认证、多实例、remotes、完整 ID |
-| [issues.md](skills/forgejo-cli/references/issues.md) | 查询、模板、正文、标签、里程碑、依赖 |
-| [pull-requests.md](skills/forgejo-cli/references/pull-requests.md) | 创建、fork/AGit、review、CI、checkout、merge |
-| [repositories.md](skills/forgejo-cli/references/repositories.md) | 仓库、迁移、units、标签、wiki |
-| [actions-and-releases.md](skills/forgejo-cli/references/actions-and-releases.md) | Actions、变量/secret 限制、milestone、tag、release、assets |
-| [organizations-and-users.md](skills/forgejo-cli/references/organizations-and-users.md) | 组织、team、权限、用户、公钥 |
-| [troubleshooting.md](skills/forgejo-cli/references/troubleshooting.md) | 参数差异、权限、交互阻塞、输出与重试 |
-
-## 版本与依据
-
-首版基于上游源码、wiki 和本机 `fj v0.8.0-dev` 的实际 help 校对。**不声明兼容所有历史/未来版本**：执行时仍应以安装版本的 `--help` 为准。源码依据与已核实差异见 [docs/sources.md](docs/sources.md)。
-
-关键约束：
-
-- 不读取或修改 `keys.json`，不携带任何真实主机、账号或 token。
-- 不虚构通用 `fj api` / JSON 输出接口，不套用 `gh` 的 flags。
-- 不把 `pr status --wait` 的零退出码当作 CI 成功。
-- 不自动执行发布、合并、权限提升、删除或其他未授权写操作。
-- 不包装 CLI，不引入运行时 Python/Node 依赖。
-
-## 开发与验证
-
-仓库检查仅需要 Python 3.9+；CLI 语法检查另外需要 `fj`。不读取真实凭据、不访问远端 API、不创建/修改远端资源。
+### From Git with the Skills CLI
 
 ```bash
+npx skills add https://github.com/longredzhong/forgejo-cli-skill --skill forgejo-cli
+```
+
+The Skills CLI discovers `skills/forgejo-cli/SKILL.md` and lets you select an agent and installation scope. This route uses the npm-hosted **Skills CLI**, but does **not** require this project to be published on npm. Inspect/pin the installer and source version when reproducibility matters.
+
+### From a release ZIP
+
+After a release is published, download `forgejo-cli-skill-VERSION.zip` and `SHA256SUMS` from its assets. Verify the checksum in a fresh download directory, then extract into your agent's skills directory. The ZIP has one top-level `forgejo-cli/` directory containing `SKILL.md` and `references/`; it does not contain a second `skills/` wrapper, repository tests, or credentials. Checksums detect corruption, not the authenticity of an untrusted release source.
+
+### From npm via npx (after npm publication)
+
+Requires Node.js **22.14+**. Once version `0.1.0` has actually been published:
+
+```bash
+npx forgejo-cli-skill@0.1.0 install --dir .agents/skills --dry-run
+npx forgejo-cli-skill@0.1.0 install --dir .agents/skills
+```
+
+`--dir` is the **parent skills directory**; installation creates `forgejo-cli/` inside it. Select the directory supported by your agent. For a supported user-wide location, use `--dir ~/.agents/skills` (shell expansion), or the agent-specific parent directory. Existing files, directories, and symlinks at the destination are refused; there is no overwrite/force mode. For upgrades, review and back up the old skill yourself before installing into an absent destination.
+
+You can test the implementation locally now, without npm publication:
+
+```bash
+node bin/forgejo-cli-skill.mjs install --dir /tmp/my-agent-skills --dry-run
+```
+
+Manual installation also works: copy the entire `skills/forgejo-cli/` directory, not just `SKILL.md`. Keep the final directory name `forgejo-cli`.
+
+## Use
+
+Ask your agent to perform a specific Forgejo task, for example:
+
+- “Find timeout-related issues in this Codeberg repository, including closed issues.”
+- “Read this Forgejo PR's diff, comments, and CI status without posting anything.”
+- “Create an issue using the required repository template and the prepared body file.”
+- “Create a PR for this branch with the specified base/head; do not merge it.”
+
+The skill instructions are in English for portability. The entrypoint provides procedures and gotchas; references load only as needed. Writes still require the user's authorization.
+
+## Coverage and safety
+
+| File | Scope |
+| --- | --- |
+| [SKILL.md](skills/forgejo-cli/SKILL.md) | Workflow, explicit targets, noninteractive defaults, safety |
+| [Authentication and targeting](skills/forgejo-cli/references/auth-and-targeting.md) | Hosts, login, remotes, repository and object IDs |
+| [Issues](skills/forgejo-cli/references/issues.md) | Templates, bodies, labels, milestones, dependencies |
+| [Pull requests](skills/forgejo-cli/references/pull-requests.md) | Fork/AGit, reviews, checkout, CI, merge |
+| [Repositories and wiki](skills/forgejo-cli/references/repositories.md) | Creation, migration, units, labels, wiki |
+| [Actions and releases](skills/forgejo-cli/references/actions-and-releases.md) | Variables/secrets, dispatch, milestones, tags, releases, assets |
+| [Organizations and users](skills/forgejo-cli/references/organizations-and-users.md) | Teams, permissions, profiles, public keys |
+| [Troubleshooting](skills/forgejo-cli/references/troubleshooting.md) | Flag/version differences, interactive input, output, retries |
+
+The skill does not read `keys.json`, invent general `fj api`/JSON interfaces, treat zero exit from `pr status --wait` as passing CI, or bypass protections. The npm installer only copies bundled Markdown; it has no third-party runtime dependencies, install lifecycle hooks, network calls, or agent auto-detection. **Node is needed only for npm installation; using the installed skill does not need Node or Python.**
+
+Examples were checked against `fj v0.8.0-dev`, not every historical or future version. Installed command help takes precedence. See [sources and maintenance](https://github.com/longredzhong/forgejo-cli-skill/blob/main/docs/sources.md).
+
+## Development and validation
+
+Requires Python **3.9+** for repository/ZIP checks and Node.js **22.14+** with npm for installer/package checks. Optional fj help checks do not call remote APIs.
+
+```bash
+npm ci --ignore-scripts
+npm test
 python3 -I -m unittest discover -s tests -v
 FJ_SKILL_CLI_CHECK=1 python3 -I -m unittest discover -s tests -v
 ```
 
-第一条检查标准 frontmatter 的本仓库子集、目录命名、文档链接、参考文档可达性和评估样例。第二条额外从 skill 的 shell 示例提取命令，只追加 `--help` 检查安装版本是否接受这些参数；在临时 HOME/XDG 目录下运行，**不会执行示例中的写操作**。它不能验证服务端行为、正文模板解析、权限或实际副作用。
+The Python suite checks skill structure, links, evaluation-scenario structure, reproducible ZIP contents/checksums, and an offline npm tarball/npx installation smoke test. The opt-in fj suite appends `--help` to examples in an isolated HOME/XDG directory; it does not execute their writes. The Node suite exercises installation, dry runs, collisions, invalid arguments, and symlink/payload safeguards.
 
-如已安装官方参考验证器，也可运行：
+For full standard-format validation, use the official validator when installed:
 
 ```bash
 skills-ref validate skills/forgejo-cli
 ```
 
-官方规范校验器负责完整格式验证；本仓库的零依赖测试不是它的完整替代品。行为评估场景在 [evals/scenarios.json](evals/scenarios.json)，需在可控的 agent 测试环境中评估；仓库测试仅检查场景结构，不声称已完成真实 agent 行为评估。
+The [13 behavior scenarios](https://github.com/longredzhong/forgejo-cli-skill/blob/main/evals/scenarios.json) require a controlled agent evaluation environment. Structure/help tests do not establish actual agent behavior or service-side compatibility.
 
-更新时：核对版本和源码 → 修正文档示例 → 运行两组测试 → 在用户授权的测试仓库做读回验证。不要将 help 解析通过等同于真实服务端兼容。
+## Build and publish
+
+```bash
+python3 -I scripts/build_release.py --output dist
+npm pack --ignore-scripts --pack-destination dist
+```
+
+The ZIP builder refuses existing outputs; use a fresh directory for a repeated build. Package version comes from `package.json`. A pushed stable `vVERSION` tag matching that version triggers a tested ZIP build and draft GitHub Release with ZIP/checksum assets. It never creates a missing tag, overwrites release assets, or publishes to npm automatically.
+
+See [distribution and release operations](https://github.com/longredzhong/forgejo-cli-skill/blob/main/docs/distribution.md) for draft promotion, exact-tag validation, npm research, first-publication prerequisites, and the optional manual OIDC publishing workflow. The npm package currently declares `UNLICENSED`: a maintainer must make an explicit license decision and verify package-name ownership before public distribution. No upstream license is implicitly applied to this project.
